@@ -52,6 +52,7 @@ resource "aws_instance" "k3s" {
   user_data = templatefile("${path.module}/templates/bootstrap.sh.tftpl", {
     aws_region     = var.aws_region
     public_ip      = aws_eip.k3s.public_ip
+    k3s_cluster_cidr = var.k3s_cluster_cidr
     app_manifest   = local.app_manifest
     model_bucket   = aws_s3_bucket.model.bucket
     model_key      = aws_s3_object.model.key

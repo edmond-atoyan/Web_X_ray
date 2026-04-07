@@ -9,6 +9,9 @@ admin_cidrs = ["203.0.113.10/32"]
 # Optional if you have DNS for the app.
 # app_hostname = "xray.example.com"
 
+# K3s pod CIDR must not overlap the VPC CIDR.
+# k3s_cluster_cidr = "10.52.0.0/16"
+
 # Optional if you want GitHub Actions CD and your repo or branch differ from the defaults.
 # github_actions_allowed_subjects = ["repo:edmond-atoyan/web_code:ref:refs/heads/main"]
 

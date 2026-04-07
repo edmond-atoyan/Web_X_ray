@@ -16,7 +16,8 @@ mkdir -p /opt/web-xray/model /opt/web-xray/media
 
 aws --region ${aws_region} s3 cp "s3://${model_bucket}/${model_key}" "/opt/web-xray/model/model.pkl"
 
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --write-kubeconfig-mode 644 --tls-san ${public_ip}" sh -
+# Use a pod CIDR that does not overlap the VPC network, otherwise pods cannot reliably reach VPC resources like RDS.
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --write-kubeconfig-mode 644 --tls-san ${public_ip} --cluster-cidr ${k3s_cluster_cidr}" sh -
 
 mkdir -p /home/ubuntu/.kube
 cp /etc/rancher/k3s/k3s.yaml /home/ubuntu/.kube/config

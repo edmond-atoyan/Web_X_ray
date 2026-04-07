@@ -93,6 +93,12 @@ variable "public_subnet_cidr" {
   default     = "10.42.0.0/24"
 }
 
+variable "k3s_cluster_cidr" {
+  description = "Pod network CIDR for K3s. Must not overlap the VPC CIDR."
+  type        = string
+  default     = "10.52.0.0/16"
+}
+
 variable "private_subnet_cidrs" {
   description = "Two private subnet CIDRs for the RDS subnet group."
   type        = list(string)
