@@ -16,6 +16,18 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "github_actions_oidc_provider_arn" {
+  description = "Existing GitHub Actions OIDC provider ARN. Leave empty to let Terraform create it."
+  type        = string
+  default     = ""
+}
+
+variable "github_actions_allowed_subjects" {
+  description = "Allowed GitHub OIDC subject claims for assuming the deploy role."
+  type        = list(string)
+  default     = ["repo:edmond-atoyan/web_code:ref:refs/heads/main"]
+}
+
 variable "container_image" {
   description = "Container image URI that K3s should deploy. Use a publicly pullable image or provide an image pull secret."
   type        = string

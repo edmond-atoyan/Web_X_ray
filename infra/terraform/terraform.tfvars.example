@@ -9,6 +9,12 @@ admin_cidrs = ["203.0.113.10/32"]
 # Optional if you have DNS for the app.
 # app_hostname = "xray.example.com"
 
+# Optional if you want GitHub Actions CD and your repo or branch differ from the defaults.
+# github_actions_allowed_subjects = ["repo:edmond-atoyan/web_code:ref:refs/heads/main"]
+
+# Optional if your AWS account already has the GitHub OIDC provider.
+# github_actions_oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+
 # RDS sizing overrides
 # db_instance_class = "db.t3.micro"
 # db_allocated_storage = 20

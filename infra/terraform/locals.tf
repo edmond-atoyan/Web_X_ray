@@ -1,5 +1,6 @@
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
+  github_actions_oidc_provider_arn = var.github_actions_oidc_provider_arn != "" ? var.github_actions_oidc_provider_arn : aws_iam_openid_connect_provider.github_actions[0].arn
 
   common_tags = {
     Project     = var.project_name

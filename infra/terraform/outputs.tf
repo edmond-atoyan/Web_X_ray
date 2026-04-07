@@ -53,3 +53,13 @@ output "app_secret_arn" {
   value       = aws_secretsmanager_secret.app.arn
   sensitive   = true
 }
+
+output "github_actions_deploy_role_arn" {
+  description = "IAM role ARN for the GitHub Actions deploy workflow."
+  value       = aws_iam_role.github_actions_deploy.arn
+}
+
+output "github_actions_oidc_provider_arn" {
+  description = "GitHub Actions OIDC provider ARN used by the deploy role."
+  value       = local.github_actions_oidc_provider_arn
+}
