@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-xray
+  namespace: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-xray
+  template:
+    metadata:
+      labels:
+        app: web-xray
+    spec:
+%{ if image_pull_secret_name != "" ~}
+      imagePullSecrets:
+        - name: ${image_pull_secret_name}
+%{ endif ~}
+      containers:
+        - name: web-xray
+          image: ${container_image}
+          imagePullPolicy: Always
+          command:
+            - sh
+            - -c
+            - python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000 --noreload
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: DB_ENGINE
+              value: mysql
+            - name: MYSQL_HOST
+              value: ${db_host}
+            - name: MYSQL_PORT
+              value: "${db_port}"
+            - name: MYSQL_DATABASE
+              value: ${db_name}
+            - name: MYSQL_USER
+              value: ${db_user}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: web-xray-secrets
+                  key: MYSQL_PASSWORD
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: web-xray-secrets
+                  key: DJANGO_SECRET_KEY
+            - name: DJANGO_ALLOWED_HOSTS
+              value: ${allowed_hosts}
+            - name: MODEL_PATH
+              value: /app/model/model.pkl
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          volumeMounts:
+            - name: model
+              mountPath: /app/model
+              readOnly: true
+            - name: media
+              mountPath: /app/media
+      volumes:
+        - name: model
+          hostPath:
+            path: /opt/web-xray/model
+            type: Directory
+        - name: media
+          hostPath:
+            path: /opt/web-xray/media
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-xray
+  namespace: ${namespace}
+spec:
+  selector:
+    app: web-xray
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-xray
+  namespace: ${namespace}
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+%{ if app_hostname != "" ~}
+    - host: ${app_hostname}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-xray
+                port:
+                  number: 80
+%{ else ~}
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-xray
+                port:
+                  number: 80
+%{ endif ~}

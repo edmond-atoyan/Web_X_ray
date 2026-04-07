@@ -1,0 +1,66 @@
+#!/bin/bash
+set -euxo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update
+apt-get install -y --no-install-recommends curl ca-certificates unzip
+
+# Ubuntu 24.04 no longer ships the old apt awscli package, so install AWS CLI v2 directly.
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+rm -rf /tmp/aws /tmp/awscliv2.zip
+
+mkdir -p /opt/web-xray/model /opt/web-xray/media
+
+aws --region ${aws_region} s3 cp "s3://${model_bucket}/${model_key}" "/opt/web-xray/model/model.pkl"
+
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --write-kubeconfig-mode 644 --tls-san ${public_ip}" sh -
+
+mkdir -p /home/ubuntu/.kube
+cp /etc/rancher/k3s/k3s.yaml /home/ubuntu/.kube/config
+sed -i "s/127.0.0.1/${public_ip}/" /home/ubuntu/.kube/config
+chown -R ubuntu:ubuntu /home/ubuntu/.kube
+
+aws --region ${aws_region} secretsmanager get-secret-value \
+  --secret-id "${app_secret_arn}" \
+  --query SecretString \
+  --output text > /tmp/web-xray-secret.json
+
+python3 - <<'PY'
+import base64
+import json
+from pathlib import Path
+
+data = json.loads(Path("/tmp/web-xray-secret.json").read_text())
+
+def enc(value: str) -> str:
+    return base64.b64encode(value.encode("utf-8")).decode("utf-8")
+
+namespace_manifest = """apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${namespace}
+"""
+
+secret_manifest = f"""apiVersion: v1
+kind: Secret
+metadata:
+  name: web-xray-secrets
+  namespace: ${namespace}
+type: Opaque
+data:
+  MYSQL_PASSWORD: {enc(data["mysql_password"])}
+  DJANGO_SECRET_KEY: {enc(data["django_secret_key"])}
+"""
+
+Path("/var/lib/rancher/k3s/server/manifests/00-web-xray-namespace.yaml").write_text(namespace_manifest)
+Path("/var/lib/rancher/k3s/server/manifests/10-web-xray-secret.yaml").write_text(secret_manifest)
+PY
+
+cat > /var/lib/rancher/k3s/server/manifests/20-web-xray-app.yaml <<'EOF'
+${app_manifest}
+EOF
+
+rm -f /tmp/web-xray-secret.json
