@@ -136,7 +136,7 @@ async function analyzeImage() {
       elements.resultText.textContent = data.message || "Image saved successfully.";
       elements.resultText.classList.add("success");
       elements.confidenceText.textContent =
-        "Prediction is currently unavailable in this local setup.";
+        data.warning || "Prediction is currently unavailable in this environment.";
       elements.resultCard.classList.remove("hidden");
       return;
     }

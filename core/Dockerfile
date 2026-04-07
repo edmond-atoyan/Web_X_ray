@@ -21,7 +21,9 @@ RUN python -m pip install --upgrade pip \
     && python -m pip install --no-cache-dir \
         Django==5.2.12 \
         Pillow==12.1.1 \
-        mysqlclient==2.2.7
+        mysqlclient==2.2.7 \
+        keras==3.13.2 \
+        tensorflow==2.21.0
 
 EXPOSE 8000
 

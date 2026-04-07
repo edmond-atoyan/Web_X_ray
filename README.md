@@ -195,8 +195,6 @@ docker build -t tb-detection-ai .
 docker run -p 8000:8000 tb-detection-ai
 ```
 
-> **Note:** The Dockerfile currently installs only Django. For full functionality (MySQL, Pillow, ML libraries), update the `RUN pip install` line in `Dockerfile` to `pip install -r requirements.txt`.
-
 ---
 
 ## API Reference
@@ -207,7 +205,7 @@ Renders the X-ray upload page.
 
 ### `POST /predict/`
 
-Upload a chest X-ray image for storage (and prediction when the ML model is enabled).
+Upload a chest X-ray image for storage and prediction.
 
 **Request:**
 
@@ -238,6 +236,17 @@ Upload a chest X-ray image for storage (and prediction when the ML model is enab
   "prediction": "Tuberculosis Detected",
   "class": 1,
   "confidence": 0.9732
+}
+```
+
+**If the upload succeeds but prediction cannot run:**
+
+```json
+{
+  "message": "Image saved successfully.",
+  "image_id": 1,
+  "image_url": "/media/xray_images/chest_xray.png",
+  "warning": "Prediction runtime is unavailable because 'tensorflow' is not installed."
 }
 ```
 
