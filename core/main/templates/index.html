@@ -1,0 +1,77 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TB Detection AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{% static 'style.css' %}" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <h1>TB Detection AI</h1>
+        <p>Upload chest X-ray images to detect Tuberculosis using AI</p>
+      </header>
+
+      <section class="upload-card" aria-labelledby="upload-section-title">
+        <h2 id="upload-section-title" class="visually-hidden">Upload and Analyze X-ray</h2>
+        
+        <form method="post" id="uploadForm" novalidate>
+            {% csrf_token %}
+          <div
+            id="dropZone"
+            class="drop-zone"
+            role="button"
+            tabindex="0"
+            aria-label="Drag and drop chest X-ray image here, or click to browse"
+          >
+            <input
+              id="fileInput"
+              type="file"
+              name="image"
+              accept="image/*"
+              aria-label="Choose a chest X-ray image"
+              hidden
+            />
+            <div class="drop-zone-content">
+              <span class="upload-icon" aria-hidden="true">+</span>
+              <p class="drop-title">Drag &amp; drop X-ray image here</p>
+              <p class="drop-subtitle">or click to browse files</p>
+            </div>
+          </div>
+
+          <div id="previewContainer" class="preview hidden" aria-live="polite">
+            <img id="previewImage" src="" alt="Uploaded chest X-ray preview" />
+            <p id="fileName" class="file-name"></p>
+          </div>
+
+          <button id="analyzeBtn" class="analyze-btn" type="submit">
+            Analyze
+          </button>
+        </form>
+
+        <div id="loadingState" class="loading hidden" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
+          <p>Running AI analysis...</p>
+        </div>
+
+        <div id="resultCard" class="result-card hidden" aria-live="polite">
+          <h3>Prediction Result</h3>
+          <p id="resultText" class="result-text"></p>
+          <p id="confidenceText" class="confidence-text"></p>
+        </div>
+
+        <p id="errorText" class="error-text hidden" role="alert"></p>
+      </section>
+    </main>
+
+    <script src="{% static 'script.js' %}"></script>
+  </body>
+</html>

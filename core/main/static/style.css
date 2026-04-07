@@ -1,0 +1,297 @@
+:root {
+  --bg-main: #f4f9ff;
+  --bg-gradient: radial-gradient(circle at top right, #d9ecff 0%, #f8fbff 45%, #f4f9ff 100%);
+  --card-bg: rgba(255, 255, 255, 0.75);
+  --card-border: rgba(255, 255, 255, 0.9);
+  --primary: #1f6feb;
+  --primary-dark: #1455bc;
+  --text-main: #1b2a41;
+  --text-soft: #5d6f8a;
+  --danger: #dc3545;
+  --success: #198754;
+  --shadow-soft: 0 12px 30px rgba(35, 78, 133, 0.12);
+  --radius: 18px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg-gradient);
+  color: var(--text-main);
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  gap: 1.5rem;
+}
+
+.hero {
+  text-align: center;
+  animation: slideDown 450ms ease-out both;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.6vw, 2.4rem);
+  letter-spacing: 0.4px;
+}
+
+.hero p {
+  margin-top: 0.65rem;
+  color: var(--text-soft);
+  font-size: clamp(0.96rem, 2vw, 1.1rem);
+}
+
+.upload-card {
+  width: min(720px, 100%);
+  backdrop-filter: blur(10px);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 1.5rem;
+  animation: fadeInUp 550ms ease-out both;
+}
+
+.drop-zone {
+  border: 2px dashed #9ac0ff;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fafdff 0%, #eff6ff 100%);
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.drop-zone:hover,
+.drop-zone:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 8px 22px rgba(31, 111, 235, 0.16);
+  outline: none;
+}
+
+.drop-zone.drag-active {
+  border-color: var(--primary-dark);
+  box-shadow: 0 10px 26px rgba(20, 85, 188, 0.2);
+  transform: scale(1.01);
+}
+
+.drop-zone-content {
+  padding: 1rem;
+}
+
+.upload-icon {
+  width: 54px;
+  height: 54px;
+  margin-inline: auto;
+  border-radius: 50%;
+  background: #e6f0ff;
+  color: var(--primary);
+  font-size: 2rem;
+  line-height: 54px;
+  display: inline-block;
+  font-weight: 500;
+}
+
+.drop-title {
+  margin: 0.9rem 0 0.2rem;
+  font-weight: 600;
+}
+
+.drop-subtitle {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.preview {
+  margin-top: 1rem;
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: #ffffff;
+  border: 1px solid #e5eefc;
+  animation: fadeIn 300ms ease-in both;
+}
+
+.preview img {
+  width: 100%;
+  max-height: 330px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid #e9effb;
+  background: #f9fcff;
+}
+
+.file-name {
+  margin: 0.65rem 0 0;
+  font-size: 0.92rem;
+  color: var(--text-soft);
+  word-break: break-all;
+}
+
+.analyze-btn {
+  width: 100%;
+  margin-top: 1rem;
+  border: none;
+  border-radius: 12px;
+  padding: 0.82rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), #4b91ff);
+  cursor: pointer;
+  transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
+  box-shadow: 0 8px 20px rgba(31, 111, 235, 0.25);
+}
+
+.analyze-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.analyze-btn:active {
+  transform: translateY(0);
+}
+
+.analyze-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.loading {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  color: var(--text-soft);
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #d8e7ff;
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 850ms linear infinite;
+}
+
+.result-card {
+  margin-top: 1rem;
+  border-radius: 14px;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e6eefb;
+  box-shadow: 0 5px 14px rgba(16, 42, 79, 0.08);
+  animation: fadeIn 350ms ease both;
+}
+
+.result-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.result-text {
+  margin: 0.15rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.result-text.danger {
+  color: var(--danger);
+}
+
+.result-text.success {
+  color: var(--success);
+}
+
+.confidence-text {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.error-text {
+  margin: 0.9rem 0 0;
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .upload-card {
+    padding: 1rem;
+  }
+
+  .drop-zone {
+    min-height: 180px;
+  }
+
+  .hero p {
+    max-width: 34ch;
+    margin-inline: auto;
+  }
+}
