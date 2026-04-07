@@ -14,13 +14,13 @@ output "k3s_instance_id" {
 }
 
 output "ec2_key_pair_name" {
-  description = "AWS key pair name created from the local id_rsa.pub key."
-  value       = aws_key_pair.deployer.key_name
+  description = "AWS key pair name created for the EC2 instance when an SSH public key is configured."
+  value       = length(aws_key_pair.deployer) > 0 ? aws_key_pair.deployer[0].key_name : null
 }
 
 output "ssh_command" {
-  description = "SSH command to connect to the EC2 K3s node once port 22 is allowed from your admin CIDR."
-  value       = "ssh -i ${var.ssh_private_key_path} ubuntu@${aws_eip.k3s.public_ip}"
+  description = "SSH command to connect to the EC2 K3s node once port 22 is allowed and an SSH key pair is configured."
+  value       = length(aws_key_pair.deployer) > 0 ? "ssh -i ${var.ssh_private_key_path} ubuntu@${aws_eip.k3s.public_ip}" : null
 }
 
 output "k3s_api_endpoint" {

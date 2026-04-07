@@ -19,8 +19,10 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_key_pair" "deployer" {
+  count = local.effective_ssh_public_key != "" ? 1 : 0
+
   key_name   = "${local.name_prefix}-deployer"
-  public_key = trimspace(file(var.ssh_public_key_path))
+  public_key = local.effective_ssh_public_key
 
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-deployer"
@@ -33,7 +35,7 @@ resource "aws_instance" "k3s" {
   subnet_id                   = aws_subnet.public.id
   vpc_security_group_ids      = [aws_security_group.k3s.id]
   iam_instance_profile        = aws_iam_instance_profile.ec2.name
-  key_name                    = aws_key_pair.deployer.key_name
+  key_name                    = length(aws_key_pair.deployer) > 0 ? aws_key_pair.deployer[0].key_name : null
   associate_public_ip_address = false
   user_data_replace_on_change = true
 
@@ -50,14 +52,14 @@ resource "aws_instance" "k3s" {
   }
 
   user_data = templatefile("${path.module}/templates/bootstrap.sh.tftpl", {
-    aws_region     = var.aws_region
-    public_ip      = aws_eip.k3s.public_ip
+    aws_region       = var.aws_region
+    public_ip        = aws_eip.k3s.public_ip
     k3s_cluster_cidr = var.k3s_cluster_cidr
-    app_manifest   = local.app_manifest
-    model_bucket   = aws_s3_bucket.model.bucket
-    model_key      = aws_s3_object.model.key
-    app_secret_arn = aws_secretsmanager_secret.app.arn
-    namespace      = var.kubernetes_namespace
+    app_manifest     = local.app_manifest
+    model_bucket     = aws_s3_bucket.model.bucket
+    model_key        = aws_s3_object.model.key
+    app_secret_arn   = aws_secretsmanager_secret.app.arn
+    namespace        = var.kubernetes_namespace
   })
 
   tags = merge(local.common_tags, {

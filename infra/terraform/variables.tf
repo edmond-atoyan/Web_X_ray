@@ -63,6 +63,13 @@ variable "ssh_public_key_path" {
   default     = "/home/edmond/.ssh/web_xray_ec2.pub"
 }
 
+variable "ssh_public_key" {
+  description = "Optional public key material to register as the EC2 key pair. Useful for CI where the local key path does not exist."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "ssh_private_key_path" {
   description = "Path to the local private key used for SSHing into the EC2 instance."
   type        = string
