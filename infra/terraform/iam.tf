@@ -61,8 +61,8 @@ resource "aws_iam_instance_profile" "ec2" {
 resource "aws_iam_openid_connect_provider" "github_actions" {
   count = var.github_actions_oidc_provider_arn == "" ? 1 : 0
 
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
   # AWS ignores the thumbprint for GitHub's OIDC provider, but the Terraform resource still accepts a value here.
   thumbprint_list = ["ffffffffffffffffffffffffffffffffffffffff"]
 
