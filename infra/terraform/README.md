@@ -30,6 +30,10 @@ Required GitHub secret:
 
 - `AWS_TERRAFORM_ROLE_ARN`, which should be set to the `github_actions_terraform_role_arn` Terraform output after the bootstrap apply
 
+Bootstrap note:
+
+- The first creation of `github_actions_terraform_role_arn` cannot come from the Terraform GitHub workflow itself, because GitHub cannot assume that role until it already exists. Create it once with admin-level AWS credentials, then save the output ARN as `AWS_TERRAFORM_ROLE_ARN`.
+
 Optional GitHub secret:
 
 - `SSH_PUBLIC_KEY` if you want Terraform to register an EC2 key pair for SSH access

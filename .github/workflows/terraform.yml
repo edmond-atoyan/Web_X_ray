@@ -37,10 +37,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Require Terraform role secret
+        env:
+          AWS_TERRAFORM_ROLE_ARN: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${AWS_TERRAFORM_ROLE_ARN}" ]; then
+            echo "::error::AWS_TERRAFORM_ROLE_ARN is not set. Bootstrap the github_actions_terraform role once with admin AWS credentials, then save its ARN as a GitHub Actions secret."
+            exit 1
+          fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN != '' && secrets.AWS_TERRAFORM_ROLE_ARN || secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Terraform
