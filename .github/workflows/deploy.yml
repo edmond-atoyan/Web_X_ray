@@ -67,44 +67,49 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Find target instance
-        id: instance
-        run: |
-          set -euo pipefail
-
-          instance_id="$(aws ec2 describe-instances \
-            --region "$AWS_REGION" \
-            --filters \
-              "Name=tag:Name,Values=${INSTANCE_TAG_NAME}" \
-              "Name=instance-state-name,Values=running" \
-            --query 'Reservations[].Instances[].InstanceId' \
-            --output text)"
-
-          if [[ -z "${instance_id}" || "${instance_id}" == "None" ]]; then
-            echo "No running instance found with tag Name=${INSTANCE_TAG_NAME}" >&2
-            exit 1
-          fi
-
-          ping_status="$(aws ssm describe-instance-information \
-            --region "$AWS_REGION" \
-            --filters "Key=InstanceIds,Values=${instance_id}" \
-            --query 'InstanceInformationList[0].PingStatus' \
-            --output text)"
-
-          if [[ "${ping_status}" != "Online" ]]; then
-            echo "Instance ${instance_id} is not online in SSM. PingStatus=${ping_status}" >&2
-            exit 1
-          fi
-
-          echo "instance_id=${instance_id}" >> "$GITHUB_OUTPUT"
-          echo "Using instance ${instance_id}"
-
       - name: Deploy on EC2 with SSM
         env:
-          INSTANCE_ID: ${{ steps.instance.outputs.instance_id }}
           IMAGE_REF: ${{ steps.image.outputs.ref }}
         run: |
           set -euo pipefail
+
+          resolve_instance() {
+            local instance_id=""
+            local ping_status=""
+
+            for lookup_attempt in $(seq 1 30); do
+              instance_id="$(aws ec2 describe-instances \
+                --region "$AWS_REGION" \
+                --filters \
+                  "Name=tag:Name,Values=${INSTANCE_TAG_NAME}" \
+                  "Name=instance-state-name,Values=running" \
+                --query 'sort_by(Reservations[].Instances[], &LaunchTime)[-1].InstanceId' \
+                --output text)"
+
+              if [[ -z "${instance_id}" || "${instance_id}" == "None" ]]; then
+                echo "No running instance found for ${INSTANCE_TAG_NAME} yet (attempt ${lookup_attempt}/30)" >&2
+                sleep 10
+                continue
+              fi
+
+              ping_status="$(aws ssm describe-instance-information \
+                --region "$AWS_REGION" \
+                --filters "Key=InstanceIds,Values=${instance_id}" \
+                --query 'InstanceInformationList[0].PingStatus' \
+                --output text)"
+
+              if [[ "${ping_status}" == "Online" ]]; then
+                echo "${instance_id}"
+                return 0
+              fi
+
+              echo "Instance ${instance_id} is not online in SSM yet (PingStatus=${ping_status}, attempt ${lookup_attempt}/30)" >&2
+              sleep 10
+            done
+
+            echo "Timed out waiting for a running SSM-online instance tagged ${INSTANCE_TAG_NAME}" >&2
+            return 1
+          }
 
           cat > ssm-commands.json <<EOF
           {
@@ -117,51 +122,69 @@ jobs:
           }
           EOF
 
-          command_id="$(aws ssm send-command \
-            --region "$AWS_REGION" \
-            --instance-ids "$INSTANCE_ID" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Deploy ${IMAGE_REF}" \
-            --parameters file://ssm-commands.json \
-            --query 'Command.CommandId' \
-            --output text)"
+          for deploy_attempt in $(seq 1 6); do
+            instance_id="$(resolve_instance)"
+            echo "Using instance ${instance_id} for deploy attempt ${deploy_attempt}/6"
 
-          echo "SSM command: ${command_id}"
-
-          for attempt in $(seq 1 60); do
-            status="$(aws ssm get-command-invocation \
+            command_id="$(aws ssm send-command \
               --region "$AWS_REGION" \
-              --command-id "$command_id" \
-              --instance-id "$INSTANCE_ID" \
-              --query 'Status' \
-              --output text 2>/dev/null || true)"
+              --instance-ids "$instance_id" \
+              --document-name "AWS-RunShellScript" \
+              --comment "Deploy ${IMAGE_REF}" \
+              --parameters file://ssm-commands.json \
+              --query 'Command.CommandId' \
+              --output text)"
 
-            case "$status" in
-              Success)
-                aws ssm get-command-invocation \
-                  --region "$AWS_REGION" \
-                  --command-id "$command_id" \
-                  --instance-id "$INSTANCE_ID" \
-                  --query 'StandardOutputContent' \
-                  --output text
-                exit 0
-                ;;
-              Pending|InProgress|Delayed|"")
-                echo "Deployment status: ${status:-Pending} (attempt ${attempt}/60)"
-                sleep 10
-                ;;
-              *)
-                echo "Deployment failed with status: ${status}" >&2
-                aws ssm get-command-invocation \
-                  --region "$AWS_REGION" \
-                  --command-id "$command_id" \
-                  --instance-id "$INSTANCE_ID" \
-                  --query '{Status:Status,Stdout:StandardOutputContent,Stderr:StandardErrorContent}' \
-                  --output json
-                exit 1
-                ;;
-            esac
+            echo "SSM command: ${command_id}"
+
+            for status_attempt in $(seq 1 60); do
+              status="$(aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
+                --command-id "$command_id" \
+                --instance-id "$instance_id" \
+                --query 'Status' \
+                --output text 2>/dev/null || true)"
+
+              case "$status" in
+                Success)
+                  aws ssm get-command-invocation \
+                    --region "$AWS_REGION" \
+                    --command-id "$command_id" \
+                    --instance-id "$instance_id" \
+                    --query 'StandardOutputContent' \
+                    --output text
+                  exit 0
+                  ;;
+                Pending|InProgress|Delayed|"")
+                  echo "Deployment status: ${status:-Pending} (poll ${status_attempt}/60)"
+                  sleep 10
+                  ;;
+                *)
+                  status_details="$(aws ssm get-command-invocation \
+                    --region "$AWS_REGION" \
+                    --command-id "$command_id" \
+                    --instance-id "$instance_id" \
+                    --query 'StatusDetails' \
+                    --output text 2>/dev/null || true)"
+
+                  if [[ "${status_details}" == "Undeliverable" && "${deploy_attempt}" -lt 6 ]]; then
+                    echo "SSM command became undeliverable for instance ${instance_id}; retrying with the latest running instance"
+                    sleep 15
+                    break
+                  fi
+
+                  echo "Deployment failed with status: ${status} (details: ${status_details})" >&2
+                  aws ssm get-command-invocation \
+                    --region "$AWS_REGION" \
+                    --command-id "$command_id" \
+                    --instance-id "$instance_id" \
+                    --query '{Status:Status,StatusDetails:StatusDetails,Stdout:StandardOutputContent,Stderr:StandardErrorContent}' \
+                    --output json
+                  exit 1
+                  ;;
+              esac
+            done
           done
 
-          echo "Timed out waiting for deployment command ${command_id}" >&2
+          echo "Timed out waiting for a stable target instance and successful SSM deployment" >&2
           exit 1
