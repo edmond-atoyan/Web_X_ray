@@ -59,6 +59,11 @@ output "github_actions_deploy_role_arn" {
   value       = aws_iam_role.github_actions_deploy.arn
 }
 
+output "github_actions_terraform_role_arn" {
+  description = "IAM role ARN for the GitHub Actions Terraform workflow."
+  value       = aws_iam_role.github_actions_terraform.arn
+}
+
 output "github_actions_oidc_provider_arn" {
   description = "GitHub Actions OIDC provider ARN used by the deploy role."
   value       = local.github_actions_oidc_provider_arn

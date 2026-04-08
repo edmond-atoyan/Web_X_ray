@@ -115,6 +115,39 @@ data "aws_iam_policy_document" "github_actions_deploy" {
   }
 }
 
+data "aws_iam_policy_document" "github_actions_terraform" {
+  statement {
+    sid    = "ReadCallerIdentity"
+    effect = "Allow"
+    actions = [
+      "sts:GetCallerIdentity"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ManageTerraformStateBackend"
+    effect = "Allow"
+    actions = [
+      "dynamodb:*",
+      "s3:*"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ManageApplicationInfrastructure"
+    effect = "Allow"
+    actions = [
+      "ec2:*",
+      "iam:*",
+      "rds:*",
+      "secretsmanager:*"
+    ]
+    resources = ["*"]
+  }
+}
+
 resource "aws_iam_role" "github_actions_deploy" {
   name               = "${local.name_prefix}-github-actions-deploy"
   assume_role_policy = data.aws_iam_policy_document.github_actions_deploy_assume.json
@@ -126,4 +159,17 @@ resource "aws_iam_role_policy" "github_actions_deploy" {
   name   = "${local.name_prefix}-github-actions-deploy"
   role   = aws_iam_role.github_actions_deploy.id
   policy = data.aws_iam_policy_document.github_actions_deploy.json
+}
+
+resource "aws_iam_role" "github_actions_terraform" {
+  name               = "${local.name_prefix}-github-actions-terraform"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_deploy_assume.json
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "github_actions_terraform" {
+  name   = "${local.name_prefix}-github-actions-terraform"
+  role   = aws_iam_role.github_actions_terraform.id
+  policy = data.aws_iam_policy_document.github_actions_terraform.json
 }

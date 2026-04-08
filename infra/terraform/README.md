@@ -28,7 +28,7 @@ After the repository secrets are configured, pushes to `main` that change `infra
 
 Required GitHub secret:
 
-- `AWS_TERRAFORM_ROLE_ARN` or a broadened `AWS_DEPLOY_ROLE_ARN` with permissions to manage this stack and its Terraform backend
+- `AWS_TERRAFORM_ROLE_ARN`, which should be set to the `github_actions_terraform_role_arn` Terraform output after the bootstrap apply
 
 Optional GitHub secret:
 
